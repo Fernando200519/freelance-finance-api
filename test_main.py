@@ -7,7 +7,7 @@ def test_read_main():
     # Simulamos una petición a la raíz
     response = client.get("/")
     assert response.status_code == 200
-    assert response.json() == {"message": "Bienvenido a la API de Finanzas para Freelancers"}
+    assert response.json() == {"message": "Bienvenido a la API de Finanzas para Freelancers, este es un cambio para probar, 123"}
 
 def test_get_balance():
     # Probamos el endpoint que creamos para tu balance
