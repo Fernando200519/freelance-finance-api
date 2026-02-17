@@ -20,3 +20,7 @@ def get_balance():
         "currency": "MXN",
         "database_used": db_url
     }
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy", "version": "1.0.0"}
