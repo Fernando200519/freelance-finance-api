@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: self-hosted # <--- Aquí le dices que use tu VirtualBox
+    runs-on: self-hosted
 
     steps:
       # FASE 2: BUILD (Construcción del entorno)
