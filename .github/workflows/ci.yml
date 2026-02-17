@@ -1,17 +1,16 @@
 name: CI/CD Freelance Finance API
 
-# FASE 1: SOURCE (Origen)
-# El pipeline se activa cada vez que subes código a la rama 'main'
+# 1. DISPARADORES: Cuándo se activa el Pipeline
 on:
   push:
     branches: ["main"]
+    tags: ["v*"] # Se activa también cuando creas una versión v1.0, v1.1, etc.
 
 jobs:
+  # 2. FASE DE CALIDAD: Build y Test
   build-and-test:
     runs-on: self-hosted
-
     steps:
-      # FASE 2: BUILD (Construcción del entorno)
       - name: Descargar código del repo
         uses: actions/checkout@v3
 
@@ -24,24 +23,49 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pytest  # Necesario para la fase de Test
+          pip install pytest httpx
 
-      # FASE 3: TEST (Pruebas de Calidad)
-      - name: Ejecutar pruebas automáticas
-        run: |
-          # Aquí correrías tus tests. Si uno falla, el pipeline se detiene.
-          pytest
+      - name: Ejecutar pruebas automáticas (Pytest)
+        run: pytest
 
-      # FASE 4: BUILD DOCKER (Creación del Artefacto Inmutable)
       - name: Construir Imagen de Docker
         run: |
+          # Usamos el SHA del commit para que cada imagen sea única e inmutable
           docker build -t finance-api:${{ github.sha }} .
-          # Usamos el ID del commit (sha) como versión única (Factor V)
+          docker tag finance-api:${{ github.sha }} finance-api:latest
 
-      # FASE 5: DEPLOY (Despliegue a tu Ubuntu Server)
-      - name: Desplegar en Servidor Ubuntu
-        # Aquí es donde el Pipeline se conecta a tu servidor real
-        # Nota: Necesitas configurar 'Secrets' en GitHub para esto
+  # 3. FASE DE RELEASE: Staging (Puerto 8080)
+  deploy-staging:
+    needs: build-and-test
+    runs-on: self-hosted
+    # Solo se ejecuta si es un push normal a la rama main (no un tag)
+    if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Desplegar en Staging (8080)
         run: |
-          echo "Conectando al servidor ${{ secrets.SERVER_IP }}..."
-          # (Aquí irían los comandos SSH para actualizar tu App)
+          docker stop finance-staging || true
+          docker rm finance-staging || true
+          docker run -d \
+            --name finance-staging \
+            -p 8080:8000 \
+            -e DATABASE_URL="${{ secrets.STAGING_DB }}" \
+            -e ENVIRONMENT="STAGING" \
+            finance-api:latest
+
+  # 4. FASE DE RELEASE: Producción (Puerto 80)
+  deploy-production:
+    needs: build-and-test
+    runs-on: self-hosted
+    # Solo se ejecuta si creaste un tag de versión (ej: v1.0)
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Desplegar en Producción (80)
+        run: |
+          docker stop finance-prod || true
+          docker rm finance-prod || true
+          docker run -d \
+            --name finance-prod \
+            -p 80:8000 \
+            -e DATABASE_URL="${{ secrets.PROD_DB }}" \
+            -e ENVIRONMENT="PRODUCTION" \
+            finance-api:latest
