@@ -10,7 +10,7 @@ db_url = os.getenv("DATABASE_URL", "sqlite:///./test.db")
 
 @app.get("/")
 def read_root():
-    return {"message": "Bienvenido a la API de Finanzas para Freelancers, este es un cambio para probar"}
+    return {"message": "Bienvenido a la API de Finanzas para Freelancers, este es un cambio para probar, 123"}
 
 @app.get("/balance")
 def get_balance():
