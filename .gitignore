@@ -1,0 +1,11 @@
+# Entornos virtuales (son pesados y no se deben compartir)
+env/
+venv/
+.env
+
+# Archivos temporales de Python
+__pycache__/
+*.py[cod]
+
+# Archivos de base de datos local (Factor V: la BD debe ser externa)
+*.db
